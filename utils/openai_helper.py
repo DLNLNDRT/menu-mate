@@ -48,7 +48,7 @@ async def analyze_menu_image(image_url: str, user_question: str = "What should I
                         {
                             "type": "image_url",
                             "image_url": {
-                                "url": image_url,
+                                "url": image_url,  # Can be regular URL or data URL
                                 "detail": "high"
                             }
                         }

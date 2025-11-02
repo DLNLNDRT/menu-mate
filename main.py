@@ -17,7 +17,8 @@ from utils.openai_helper import (
 from utils.search_helper import search_google_reviews
 from utils.whatsapp_helper import (
     send_whatsapp_message,
-    format_recommendation_message
+    format_recommendation_message,
+    download_twilio_media
 )
 
 # Load environment variables
@@ -52,8 +53,26 @@ async def process_menu_request(
     This function runs after we've responded to Twilio.
     """
     try:
-        # Step 1: Analyze the menu image with GPT-4o
-        menu_analysis = await analyze_menu_image(image_url, user_question)
+        # Step 1: Download and convert Twilio media if needed
+        # Twilio Media URLs require authentication, so we download and convert to base64
+        processed_image_url = image_url
+        
+        if image_url and "api.twilio.com" in image_url:
+            # This is a Twilio Media URL - download and convert to base64
+            print(f"Downloading Twilio media: {image_url}")
+            downloaded_image = await download_twilio_media(image_url)
+            if downloaded_image:
+                processed_image_url = downloaded_image
+                print("Successfully downloaded and converted Twilio media")
+            else:
+                await send_whatsapp_message(
+                    from_number,
+                    "⚠️ Sorry, I couldn't download the image from Twilio. Please try sending it again."
+                )
+                return
+        
+        # Step 2: Analyze the menu image with GPT-4o
+        menu_analysis = await analyze_menu_image(processed_image_url, user_question)
         
         if "error" in menu_analysis:
             await send_whatsapp_message(
@@ -70,7 +89,7 @@ async def process_menu_request(
         menu_items = menu_analysis.get("menu_items", [])
         cuisine_type = menu_analysis.get("cuisine_type", "unknown")
         
-        # Step 2: Search for Google Reviews
+        # Step 3: Search for Google Reviews
         reviews_data = "No reviews available."
         if restaurant_name:
             reviews_data = await search_google_reviews(restaurant_name)
@@ -79,7 +98,7 @@ async def process_menu_request(
             search_query = f"{cuisine_type} restaurant"
             reviews_data = await search_google_reviews(search_query)
         
-        # Step 3: Summarize reviews and get recommendation
+        # Step 4: Summarize reviews and get recommendation
         recommendation = await summarize_reviews_and_recommend(
             reviews_data,
             menu_items,
@@ -90,7 +109,7 @@ async def process_menu_request(
         reasoning = recommendation.get("reasoning", "Based on available information.")
         review_highlights = recommendation.get("review_highlights", "No reviews available.")
         
-        # Step 4: Generate dish image (optional)
+        # Step 5: Generate dish image (optional)
         dish_image_url = None
         if restaurant_name:
             dish_image_url = await generate_dish_image(
@@ -99,7 +118,7 @@ async def process_menu_request(
                 cuisine_type
             )
         
-        # Step 5: Format and send response
+        # Step 6: Format and send response
         message = format_recommendation_message(
             restaurant_name or "Restaurant",
             best_dish,
