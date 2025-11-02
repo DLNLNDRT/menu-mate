@@ -31,7 +31,7 @@ async def send_whatsapp_message(
     Send a WhatsApp message via Twilio.
     
     Args:
-        to_number: Recipient's WhatsApp number (e.g., "+1234567890")
+        to_number: Recipient's WhatsApp number (e.g., "+1234567890" or "whatsapp:+1234567890")
         message: Message text to send
         media_url: Optional URL of image to include
         
@@ -44,6 +44,10 @@ async def send_whatsapp_message(
         return False
     
     whatsapp_number = os.getenv("TWILIO_WHATSAPP_NUMBER", "whatsapp:+14155238886")
+    
+    # Ensure to_number has whatsapp: prefix to match the channel
+    if not to_number.startswith("whatsapp:"):
+        to_number = f"whatsapp:{to_number}"
     
     try:
         message_params = {
