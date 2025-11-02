@@ -45,6 +45,10 @@ async def send_whatsapp_message(
     
     whatsapp_number = os.getenv("TWILIO_WHATSAPP_NUMBER", "whatsapp:+14155238886")
     
+    # Ensure whatsapp_number has whatsapp: prefix
+    if whatsapp_number and not whatsapp_number.startswith("whatsapp:"):
+        whatsapp_number = f"whatsapp:{whatsapp_number}"
+    
     # Ensure to_number has whatsapp: prefix to match the channel
     if not to_number.startswith("whatsapp:"):
         to_number = f"whatsapp:{to_number}"
