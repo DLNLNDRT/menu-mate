@@ -18,7 +18,8 @@ from utils.search_helper import search_google_reviews
 from utils.whatsapp_helper import (
     send_whatsapp_message,
     format_recommendation_message,
-    download_twilio_media
+    download_twilio_media,
+    download_and_verify_image_url
 )
 
 # Load environment variables
@@ -120,6 +121,14 @@ async def process_menu_request(
             )
             if dish_image_url:
                 print(f"Successfully generated dish image: {dish_image_url}")
+                # Verify the URL is accessible before sending
+                verified_url = await download_and_verify_image_url(dish_image_url)
+                if verified_url:
+                    dish_image_url = verified_url
+                    print("Image URL verified and ready to send")
+                else:
+                    print("Warning: Generated image URL is not accessible, will send without image")
+                    dish_image_url = None
             else:
                 print("Failed to generate dish image, will send without image")
         
@@ -133,18 +142,35 @@ async def process_menu_request(
         
         # Send message with image if available
         if dish_image_url:
-            print(f"Sending message with dish image...")
+            print(f"🖼️ Sending message with dish image URL: {dish_image_url[:80]}...")
+            
+            # Try sending message with image first
             success = await send_whatsapp_message(
                 from_number,
                 message,
                 media_url=dish_image_url
             )
-            if not success:
-                # Fallback: send without image
-                print("Failed to send with image, retrying without image...")
-                await send_whatsapp_message(from_number, message)
+            
+            if success:
+                print("✅ Message with image sent successfully!")
+            else:
+                # Fallback: Try sending image as separate message first, then text
+                print("⚠️ Failed to send with image, trying separate messages...")
+                image_only_success = await send_whatsapp_message(
+                    from_number,
+                    f"🖼️ Here's what {best_dish} looks like:",
+                    media_url=dish_image_url
+                )
+                
+                if image_only_success:
+                    print("✅ Image sent separately, now sending text message...")
+                    await send_whatsapp_message(from_number, message)
+                else:
+                    print("⚠️ Failed to send image separately, sending text only...")
+                    await send_whatsapp_message(from_number, message)
         else:
             # Send message without image
+            print("ℹ️ Sending message without image (no image available or verification failed)")
             await send_whatsapp_message(from_number, message)
             
     except Exception as e:

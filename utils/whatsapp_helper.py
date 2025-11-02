@@ -71,7 +71,11 @@ async def send_whatsapp_message(
         return True
         
     except Exception as e:
+        import traceback
         print(f"Error sending WhatsApp message: {e}")
+        print(f"Full error details: {traceback.format_exc()}")
+        if media_url:
+            print(f"Failed to send media URL: {media_url[:100]}")
         return False
 
 
@@ -152,4 +156,41 @@ async def download_twilio_media(media_url: str) -> Optional[str]:
         
     except Exception as e:
         print(f"Error downloading Twilio media: {e}")
+        return None
+
+
+async def download_and_verify_image_url(image_url: str) -> Optional[str]:
+    """
+    Download an image from a URL and verify it's accessible.
+    Returns the original URL if accessible, or None if not.
+    
+    This is useful for verifying DALL-E URLs before sending to Twilio.
+    
+    Args:
+        image_url: URL of the image to verify
+        
+    Returns:
+        The original URL if accessible, None if not
+    """
+    try:
+        print(f"Verifying image URL is accessible: {image_url[:80]}...")
+        response = await asyncio.to_thread(
+            requests.get,
+            image_url,
+            timeout=10,
+            stream=True  # Don't download full content, just verify
+        )
+        response.raise_for_status()
+        
+        # Check if it's actually an image
+        content_type = response.headers.get('Content-Type', '').lower()
+        if not content_type.startswith('image/'):
+            print(f"URL does not point to an image (Content-Type: {content_type})")
+            return None
+        
+        print(f"Image URL verified: {content_type}")
+        return image_url
+        
+    except Exception as e:
+        print(f"Error verifying image URL: {e}")
         return None
