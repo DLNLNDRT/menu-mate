@@ -2,8 +2,6 @@
 
 An AI-powered WhatsApp bot that analyzes restaurant menus from photos, searches Google reviews, and recommends the best dishes to order.
 
-An AI-powered WhatsApp bot that analyzes restaurant menus from photos, searches Google reviews, and recommends the best dishes to order.
-
 ## 🎯 Features
 
 - **Image Analysis**: Uses OpenAI GPT-4o to extract restaurant names, menu items, and cuisine type from photos
