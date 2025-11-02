@@ -225,10 +225,17 @@ async def generate_dish_image(restaurant_name: str, dish_name: str, cuisine_type
                 return image_url
                 
             except Exception as e2:
-                import traceback
-                print(f"❌ DALL-E 2 also failed: {e2}")
-                print(f"Traceback: {traceback.format_exc()}")
-                return None
+                error_str2 = str(e2)
+                # Check if DALL-E 2 also has permission issues
+                if "403" in error_str2 or "does not have access" in error_str2 or "PermissionDeniedError" in str(type(e2).__name__):
+                    print(f"❌ Neither DALL-E 3 nor DALL-E 2 available (no image generation access)")
+                    print(f"💡 Your OpenAI project needs image generation enabled. Recommendation will be sent without image.")
+                    return None
+                else:
+                    import traceback
+                    print(f"❌ DALL-E 2 failed with other error: {e2}")
+                    print(f"Traceback: {traceback.format_exc()}")
+                    return None
         else:
             # Other error, log and return None
             import traceback
