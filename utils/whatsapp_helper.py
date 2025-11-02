@@ -47,7 +47,7 @@ async def send_whatsapp_message(
     
     try:
         message_params = {
-            "from": whatsapp_number,
+            "from_": whatsapp_number,  # Use from_ because 'from' is a Python keyword
             "to": to_number,
             "body": message
         }
