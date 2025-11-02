@@ -169,6 +169,7 @@ Return your response in this JSON format:
 async def generate_dish_image(restaurant_name: str, dish_name: str, cuisine_type: str = "unknown") -> Optional[str]:
     """
     Generate a photorealistic image of the recommended dish using OpenAI DALL-E.
+    Tries DALL-E 3 first, falls back to DALL-E 2 if access is denied.
     
     Args:
         restaurant_name: Name of the restaurant (can be generic if unknown)
@@ -178,14 +179,15 @@ async def generate_dish_image(restaurant_name: str, dish_name: str, cuisine_type
     Returns:
         URL of the generated image, or None if generation fails
     """
+    # Create a descriptive prompt for DALL-E
+    if cuisine_type != "unknown":
+        prompt = f"Photorealistic high-quality food photography of {dish_name}, a {cuisine_type} dish. Professional restaurant lighting, appetizing presentation, beautifully plated, shot on white plate, shallow depth of field, restaurant-quality food photography."
+    else:
+        prompt = f"Photorealistic high-quality food photography of {dish_name}. Professional restaurant lighting, appetizing presentation, beautifully plated, shot on white plate, shallow depth of field, restaurant-quality food photography."
+    
+    # Try DALL-E 3 first (better quality)
     try:
-        # Create a descriptive prompt for DALL-E
-        if cuisine_type != "unknown":
-            prompt = f"Photorealistic high-quality food photography of {dish_name}, a {cuisine_type} dish. Professional restaurant lighting, appetizing presentation, beautifully plated, shot on white plate, shallow depth of field, restaurant-quality food photography."
-        else:
-            prompt = f"Photorealistic high-quality food photography of {dish_name}. Professional restaurant lighting, appetizing presentation, beautifully plated, shot on white plate, shallow depth of field, restaurant-quality food photography."
-        
-        print(f"Generating DALL-E image with prompt: {prompt[:100]}...")
+        print(f"Attempting DALL-E 3 image generation with prompt: {prompt[:100]}...")
         
         response = await asyncio.to_thread(
             client.images.generate,
@@ -197,11 +199,39 @@ async def generate_dish_image(restaurant_name: str, dish_name: str, cuisine_type
         )
         
         image_url = response.data[0].url
-        print(f"DALL-E image generated successfully: {image_url}")
+        print(f"✅ DALL-E 3 image generated successfully: {image_url}")
         return image_url
         
     except Exception as e:
-        import traceback
-        print(f"Error generating image: {e}")
-        print(f"Traceback: {traceback.format_exc()}")
-        return None
+        error_str = str(e)
+        
+        # Check if it's a permission/access error for DALL-E 3
+        if "403" in error_str or "does not have access" in error_str or "PermissionDeniedError" in str(type(e).__name__):
+            print(f"⚠️ DALL-E 3 not available (403/permission error), trying DALL-E 2 fallback...")
+            
+            # Fallback to DALL-E 2
+            try:
+                print(f"Attempting DALL-E 2 image generation...")
+                response = await asyncio.to_thread(
+                    client.images.generate,
+                    model="dall-e-2",
+                    prompt=prompt,
+                    size="1024x1024",
+                    n=1
+                )
+                
+                image_url = response.data[0].url
+                print(f"✅ DALL-E 2 image generated successfully: {image_url}")
+                return image_url
+                
+            except Exception as e2:
+                import traceback
+                print(f"❌ DALL-E 2 also failed: {e2}")
+                print(f"Traceback: {traceback.format_exc()}")
+                return None
+        else:
+            # Other error, log and return None
+            import traceback
+            print(f"❌ Error generating image: {e}")
+            print(f"Traceback: {traceback.format_exc()}")
+            return None
