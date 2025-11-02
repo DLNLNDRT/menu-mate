@@ -109,14 +109,19 @@ async def process_menu_request(
         reasoning = recommendation.get("reasoning", "Based on available information.")
         review_highlights = recommendation.get("review_highlights", "No reviews available.")
         
-        # Step 5: Generate dish image (optional)
+        # Step 5: Generate dish image (always try if we have a dish name)
         dish_image_url = None
-        if restaurant_name:
+        if best_dish and best_dish.lower() != "ask the waiter for recommendations":
+            print(f"Generating image for dish: {best_dish}")
             dish_image_url = await generate_dish_image(
-                restaurant_name,
+                restaurant_name or "restaurant",
                 best_dish,
                 cuisine_type
             )
+            if dish_image_url:
+                print(f"Successfully generated dish image: {dish_image_url}")
+            else:
+                print("Failed to generate dish image, will send without image")
         
         # Step 6: Format and send response
         message = format_recommendation_message(
@@ -126,15 +131,20 @@ async def process_menu_request(
             review_highlights
         )
         
-        # Send message with optional image
-        success = await send_whatsapp_message(
-            from_number,
-            message,
-            media_url=dish_image_url
-        )
-        
-        if not success:
-            # Fallback: send without image
+        # Send message with image if available
+        if dish_image_url:
+            print(f"Sending message with dish image...")
+            success = await send_whatsapp_message(
+                from_number,
+                message,
+                media_url=dish_image_url
+            )
+            if not success:
+                # Fallback: send without image
+                print("Failed to send with image, retrying without image...")
+                await send_whatsapp_message(from_number, message)
+        else:
+            # Send message without image
             await send_whatsapp_message(from_number, message)
             
     except Exception as e:

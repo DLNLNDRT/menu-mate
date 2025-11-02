@@ -171,7 +171,7 @@ async def generate_dish_image(restaurant_name: str, dish_name: str, cuisine_type
     Generate a photorealistic image of the recommended dish using OpenAI DALL-E.
     
     Args:
-        restaurant_name: Name of the restaurant
+        restaurant_name: Name of the restaurant (can be generic if unknown)
         dish_name: Name of the dish
         cuisine_type: Type of cuisine
         
@@ -179,7 +179,13 @@ async def generate_dish_image(restaurant_name: str, dish_name: str, cuisine_type
         URL of the generated image, or None if generation fails
     """
     try:
-        prompt = f"Photorealistic high-quality food photography of {dish_name} from {restaurant_name}, a {cuisine_type} restaurant. Professional restaurant lighting, appetizing presentation, shot on white plate, shallow depth of field."
+        # Create a descriptive prompt for DALL-E
+        if cuisine_type != "unknown":
+            prompt = f"Photorealistic high-quality food photography of {dish_name}, a {cuisine_type} dish. Professional restaurant lighting, appetizing presentation, beautifully plated, shot on white plate, shallow depth of field, restaurant-quality food photography."
+        else:
+            prompt = f"Photorealistic high-quality food photography of {dish_name}. Professional restaurant lighting, appetizing presentation, beautifully plated, shot on white plate, shallow depth of field, restaurant-quality food photography."
+        
+        print(f"Generating DALL-E image with prompt: {prompt[:100]}...")
         
         response = await asyncio.to_thread(
             client.images.generate,
@@ -191,8 +197,11 @@ async def generate_dish_image(restaurant_name: str, dish_name: str, cuisine_type
         )
         
         image_url = response.data[0].url
+        print(f"DALL-E image generated successfully: {image_url}")
         return image_url
         
     except Exception as e:
+        import traceback
         print(f"Error generating image: {e}")
+        print(f"Traceback: {traceback.format_exc()}")
         return None
