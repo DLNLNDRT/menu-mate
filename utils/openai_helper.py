@@ -139,7 +139,7 @@ Google Reviews:
 
 Based on these reviews and the menu items, recommend:
 1. The BEST dish to order (must be from the menu items if available)
-2. A brief, engaging explanation (2-3 sentences max)
+2. A brief, engaging explanation (3-4 sentences max)
 3. Key review highlights that support your recommendation
 
 Return your response in this JSON format:
