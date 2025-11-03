@@ -179,11 +179,12 @@ async def generate_dish_image(restaurant_name: str, dish_name: str, cuisine_type
         URL of the generated image, or None if generation fails
     """
     try:
-        # Create a descriptive prompt for DALL-E 3
+        # Create a prompt for realistic user-uploaded review photos (like Google Reviews/Yelp)
+        # Style: casual phone camera, natural lighting, authentic restaurant setting
         if cuisine_type != "unknown":
-            prompt = f"Photorealistic high-quality food photography of {dish_name}, a {cuisine_type} dish. Professional restaurant lighting, appetizing presentation, beautifully plated, shot on white plate, shallow depth of field, restaurant-quality food photography."
+            prompt = f"Realistic smartphone photo of {dish_name}, a {cuisine_type} dish, taken by a customer at a restaurant. Casual phone camera shot, natural restaurant lighting, authentic plating as served, seen from customer's perspective, looks like a real user-uploaded review photo on Google Reviews or Yelp, slightly informal composition, typical restaurant table setting in background."
         else:
-            prompt = f"Photorealistic high-quality food photography of {dish_name}. Professional restaurant lighting, appetizing presentation, beautifully plated, shot on white plate, shallow depth of field, restaurant-quality food photography."
+            prompt = f"Realistic smartphone photo of {dish_name} taken by a customer at a restaurant. Casual phone camera shot, natural restaurant lighting, authentic plating as served, seen from customer's perspective, looks like a real user-uploaded review photo on Google Reviews or Yelp, slightly informal composition, typical restaurant table setting in background."
         
         print(f"Generating DALL-E 3 image with prompt: {prompt[:100]}...")
         
