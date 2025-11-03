@@ -114,12 +114,17 @@ async def process_menu_request(
         
         # Step 5: Find or generate dish image (always try if we have a dish name)
         dish_image_url = None
+        image_source = None  # Track where the image came from
+        
         if best_dish and best_dish.lower() != "ask the waiter for recommendations":
             print(f"Searching for real photo of dish: {best_dish}")
             
             # First, try to find a real photo from Google Images (often from reviews)
             if restaurant_name:
                 dish_image_url = await search_dish_image(restaurant_name, best_dish)
+                if dish_image_url:
+                    image_source = "google"
+                    print(f"Found real photo from Google Images")
             
             # If no real photo found, generate one with DALL-E 3
             if not dish_image_url:
@@ -129,6 +134,9 @@ async def process_menu_request(
                     best_dish,
                     cuisine_type
                 )
+                if dish_image_url:
+                    image_source = "generated"
+                    print(f"Generated image with DALL-E 3")
             
             if dish_image_url:
                 print(f"Successfully found/generated dish image: {dish_image_url[:80]}...")
@@ -140,6 +148,7 @@ async def process_menu_request(
                 else:
                     print("Warning: Image URL is not accessible, will send without image")
                     dish_image_url = None
+                    image_source = None
             else:
                 print("Failed to find or generate dish image, will send without image")
         
@@ -148,7 +157,8 @@ async def process_menu_request(
             restaurant_name or "Restaurant",
             best_dish,
             reasoning,
-            review_highlights
+            review_highlights,
+            image_source
         )
         
         # Send message with image if available

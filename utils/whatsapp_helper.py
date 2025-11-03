@@ -83,7 +83,8 @@ def format_recommendation_message(
     restaurant_name: str,
     best_dish: str,
     reasoning: str,
-    review_highlights: str
+    review_highlights: str,
+    image_source: Optional[str] = None
 ) -> str:
     """
     Format a recommendation message for WhatsApp.
@@ -93,6 +94,7 @@ def format_recommendation_message(
         best_dish: Recommended dish name
         reasoning: Brief explanation
         review_highlights: Key highlights from reviews
+        image_source: Source of the dish image ("google" or "generated" or None)
         
     Returns:
         Formatted message string
@@ -106,9 +108,15 @@ def format_recommendation_message(
 {reasoning}
 
 ⭐ *Review Highlights:*
-{review_highlights}
-
-Bon appétit! 🍴"""
+{review_highlights}"""
+    
+    # Add image source information if available
+    if image_source == "google":
+        message += "\n\n📷 *Photo:* Real customer photo from Google Reviews"
+    elif image_source == "generated":
+        message += "\n\n🎨 *Photo:* AI-generated image"
+    
+    message += "\n\nBon appétit! 🍴"
     
     return message
 
