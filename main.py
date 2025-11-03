@@ -29,8 +29,9 @@ app = FastAPI(title="MenuMate API", version="1.0.0")
 
 
 @app.get("/")
+@app.head("/")
 async def root():
-    """Health check endpoint."""
+    """Health check endpoint. Supports both GET and HEAD for Render health checks."""
     return {
         "status": "healthy",
         "service": "MenuMate - AI Menu & Restaurant Advisor",
@@ -39,8 +40,9 @@ async def root():
 
 
 @app.get("/health")
+@app.head("/health")
 async def health():
-    """Health check for Render."""
+    """Health check for Render. Supports both GET and HEAD."""
     return {"status": "ok"}
 
 
