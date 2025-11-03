@@ -14,7 +14,7 @@ from utils.openai_helper import (
     summarize_reviews_and_recommend,
     generate_dish_image
 )
-from utils.search_helper import search_google_reviews
+from utils.search_helper import search_google_reviews, search_dish_image
 from utils.whatsapp_helper import (
     send_whatsapp_message,
     format_recommendation_message,
@@ -112,27 +112,36 @@ async def process_menu_request(
         reasoning = recommendation.get("reasoning", "Based on available information.")
         review_highlights = recommendation.get("review_highlights", "No reviews available.")
         
-        # Step 5: Generate dish image (always try if we have a dish name)
+        # Step 5: Find or generate dish image (always try if we have a dish name)
         dish_image_url = None
         if best_dish and best_dish.lower() != "ask the waiter for recommendations":
-            print(f"Generating image for dish: {best_dish}")
-            dish_image_url = await generate_dish_image(
-                restaurant_name or "restaurant",
-                best_dish,
-                cuisine_type
-            )
+            print(f"Searching for real photo of dish: {best_dish}")
+            
+            # First, try to find a real photo from Google Images (often from reviews)
+            if restaurant_name:
+                dish_image_url = await search_dish_image(restaurant_name, best_dish)
+            
+            # If no real photo found, generate one with DALL-E 3
+            if not dish_image_url:
+                print(f"No real photo found, generating image with DALL-E 3 for: {best_dish}")
+                dish_image_url = await generate_dish_image(
+                    restaurant_name or "restaurant",
+                    best_dish,
+                    cuisine_type
+                )
+            
             if dish_image_url:
-                print(f"Successfully generated dish image: {dish_image_url}")
+                print(f"Successfully found/generated dish image: {dish_image_url[:80]}...")
                 # Verify the URL is accessible before sending
                 verified_url = await download_and_verify_image_url(dish_image_url)
                 if verified_url:
                     dish_image_url = verified_url
                     print("Image URL verified and ready to send")
                 else:
-                    print("Warning: Generated image URL is not accessible, will send without image")
+                    print("Warning: Image URL is not accessible, will send without image")
                     dish_image_url = None
             else:
-                print("Failed to generate dish image, will send without image")
+                print("Failed to find or generate dish image, will send without image")
         
         # Step 6: Format and send response
         message = format_recommendation_message(
