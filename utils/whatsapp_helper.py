@@ -6,7 +6,7 @@ import asyncio
 import requests
 import base64
 from twilio.rest import Client
-from typing import Optional
+from typing import Optional, Dict
 
 
 def get_twilio_client() -> Optional[Client]:
@@ -81,20 +81,22 @@ async def send_whatsapp_message(
 
 def format_recommendation_message(
     restaurant_name: str,
-    best_dish: str,
-    reasoning: str,
-    review_highlights: str,
-    image_source: Optional[str] = None
+    best_reviewed: Dict,
+    worst_reviewed: Dict,
+    diet_option: Dict,
+    image_source: Optional[str] = None,
+    review_link: Optional[str] = None
 ) -> str:
     """
-    Format a recommendation message for WhatsApp.
+    Format a recommendation message for WhatsApp with three options.
     
     Args:
         restaurant_name: Name of the restaurant
-        best_dish: Recommended dish name
-        reasoning: Brief explanation
-        review_highlights: Key highlights from reviews
+        best_reviewed: Dict with dish, explanation, and highlights
+        worst_reviewed: Dict with dish, explanation, and complaints
+        diet_option: Dict with dish, explanation, and ingredients
         image_source: Source of the dish image ("google" or "generated" or None)
+        review_link: URL to the review page if image is from Google
         
     Returns:
         Formatted message string
@@ -102,17 +104,41 @@ def format_recommendation_message(
     # Use emojis to make it visually appealing
     message = f"""🍽 *Restaurant:* {restaurant_name or 'Unknown'}
 
-✅ *Best Dish:* {best_dish}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-💬 *Why this dish?*
-{reasoning}
+✅ *BEST REVIEWED:*
+*{best_reviewed.get('dish', 'N/A')}*
+
+{best_reviewed.get('explanation', '')}
 
 ⭐ *Review Highlights:*
-{review_highlights}"""
+{best_reviewed.get('highlights', 'No highlights available')}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❌ *WORST REVIEWED (Avoid):*
+*{worst_reviewed.get('dish', 'N/A')}*
+
+{worst_reviewed.get('explanation', '')}
+
+⚠️ *Complaints:*
+{worst_reviewed.get('complaints', 'No complaints available')}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🥗 *BEST DIET OPTION:*
+*{diet_option.get('dish', 'N/A')}*
+
+{diet_option.get('explanation', '')}
+
+🥬 *Ingredients & Benefits:*
+{diet_option.get('ingredients', 'Not available')}"""
     
     # Add image source information if available
     if image_source == "google":
         message += "\n\n📷 *Photo:* Real customer photo from Google Reviews"
+        if review_link:
+            message += f"\n🔗 *View Review:* {review_link}"
     elif image_source == "generated":
         message += "\n\n🎨 *Photo:* AI-generated image"
     

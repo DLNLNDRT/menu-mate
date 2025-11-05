@@ -106,7 +106,10 @@ async def analyze_menu_image(image_url: str, user_question: str = "What should I
 
 async def summarize_reviews_and_recommend(reviews_data: str, menu_items: list, restaurant_name: str) -> Dict:
     """
-    Use GPT-4o to summarize reviews and recommend the best dish.
+    Use GPT-4o to analyze reviews and provide three recommendations:
+    1. Best reviewed option
+    2. Worst reviewed option (to avoid)
+    3. Best option if on a diet (with ingredient details)
     
     Args:
         reviews_data: Text containing Google reviews snippets
@@ -114,7 +117,7 @@ async def summarize_reviews_and_recommend(reviews_data: str, menu_items: list, r
         restaurant_name: Name of the restaurant
         
     Returns:
-        Dictionary with best_dish, reasoning, and review_highlights
+        Dictionary with best_reviewed, worst_reviewed, diet_option, and explanations
     """
     try:
         menu_items_str = ", ".join(menu_items) if menu_items else "Not specified"
@@ -126,7 +129,7 @@ async def summarize_reviews_and_recommend(reviews_data: str, menu_items: list, r
                 {
                     "role": "system",
                     "content": """You are a food critic and restaurant advisor. Analyze Google reviews 
-                    and recommend the best dish from the menu. Be concise but informative."""
+                    and provide three recommendations based on reviews. Be concise but informative."""
                 },
                 {
                     "role": "user",
@@ -137,21 +140,39 @@ Available menu items: {menu_items_str}
 Google Reviews:
 {reviews_data}
 
-Based on these reviews and the menu items, recommend:
-1. The BEST dish to order (must be from the menu items if available)
-2. A brief, engaging explanation (3-4 sentences max)
-3. Key review highlights that support your recommendation
+Based on these reviews and the menu items, provide THREE recommendations:
+
+1. BEST REVIEWED OPTION: The dish that received the most positive reviews (must be from menu items if available)
+   - Include: dish name, brief explanation (2-3 sentences), key positive review highlights
+
+2. WORST REVIEWED OPTION: The dish that received negative reviews or complaints (to help users avoid bad choices)
+   - Include: dish name, brief explanation (2-3 sentences), what reviewers complained about
+
+3. BEST DIET OPTION: The healthiest option suitable for someone on a diet, with ingredient details
+   - Include: dish name, brief explanation (2-3 sentences), list of main ingredients and why it's diet-friendly
 
 Return your response in this JSON format:
 {{
-    "best_dish": "dish name",
-    "reasoning": "brief explanation",
-    "review_highlights": "key positive mentions from reviews"
+    "best_reviewed": {{
+        "dish": "dish name",
+        "explanation": "brief explanation",
+        "highlights": "key positive mentions"
+    }},
+    "worst_reviewed": {{
+        "dish": "dish name",
+        "explanation": "brief explanation",
+        "complaints": "what reviewers complained about"
+    }},
+    "diet_option": {{
+        "dish": "dish name",
+        "explanation": "brief explanation",
+        "ingredients": "list of main ingredients and why it's diet-friendly"
+    }}
 }}"""
                 }
             ],
             response_format={"type": "json_object"},
-            max_tokens=500
+            max_tokens=800
         )
         
         import json
@@ -160,9 +181,21 @@ Return your response in this JSON format:
         
     except Exception as e:
         return {
-            "best_dish": menu_items[0] if menu_items else "Ask the waiter for recommendations",
-            "reasoning": "Unable to analyze reviews at this time.",
-            "review_highlights": str(e)
+            "best_reviewed": {
+                "dish": menu_items[0] if menu_items else "Ask the waiter for recommendations",
+                "explanation": "Unable to analyze reviews at this time.",
+                "highlights": str(e)
+            },
+            "worst_reviewed": {
+                "dish": "Not available",
+                "explanation": "Unable to analyze reviews.",
+                "complaints": ""
+            },
+            "diet_option": {
+                "dish": "Not available",
+                "explanation": "Unable to analyze reviews.",
+                "ingredients": ""
+            }
         }
 
 

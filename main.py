@@ -101,28 +101,44 @@ async def process_menu_request(
             search_query = f"{cuisine_type} restaurant"
             reviews_data = await search_google_reviews(search_query)
         
-        # Step 4: Summarize reviews and get recommendation
+        # Step 4: Summarize reviews and get three recommendations
         recommendation = await summarize_reviews_and_recommend(
             reviews_data,
             menu_items,
             restaurant_name or "the restaurant"
         )
         
-        best_dish = recommendation.get("best_dish", "Ask the waiter for recommendations")
-        reasoning = recommendation.get("reasoning", "Based on available information.")
-        review_highlights = recommendation.get("review_highlights", "No reviews available.")
+        best_reviewed = recommendation.get("best_reviewed", {
+            "dish": "Ask the waiter for recommendations",
+            "explanation": "Based on available information.",
+            "highlights": "No reviews available."
+        })
+        worst_reviewed = recommendation.get("worst_reviewed", {
+            "dish": "Not available",
+            "explanation": "Unable to determine.",
+            "complaints": "No complaints data available."
+        })
+        diet_option = recommendation.get("diet_option", {
+            "dish": "Not available",
+            "explanation": "Unable to determine.",
+            "ingredients": "No ingredient data available."
+        })
         
-        # Step 5: Find or generate dish image (always try if we have a dish name)
+        # Step 5: Find or generate dish image for best reviewed option
         dish_image_url = None
         image_source = None  # Track where the image came from
+        review_link = None  # Track review link if from Google
         
-        if best_dish and best_dish.lower() != "ask the waiter for recommendations":
+        best_dish = best_reviewed.get("dish", "")
+        if best_dish and best_dish.lower() not in ["ask the waiter for recommendations", "not available", "n/a"]:
             print(f"Searching for real photo of dish: {best_dish}")
             
             # First, try to find a real photo from Google Images (often from reviews)
             if restaurant_name:
-                dish_image_url = await search_dish_image(restaurant_name, best_dish)
-                if dish_image_url:
+                image_url, source_link = await search_dish_image(restaurant_name, best_dish)
+                if image_url:
+                    dish_image_url = image_url
+                    review_link = source_link
                     image_source = "google"
                     print(f"Found real photo from Google Images")
             
@@ -149,16 +165,18 @@ async def process_menu_request(
                     print("Warning: Image URL is not accessible, will send without image")
                     dish_image_url = None
                     image_source = None
+                    review_link = None
             else:
                 print("Failed to find or generate dish image, will send without image")
         
         # Step 6: Format and send response
         message = format_recommendation_message(
             restaurant_name or "Restaurant",
-            best_dish,
-            reasoning,
-            review_highlights,
-            image_source
+            best_reviewed,
+            worst_reviewed,
+            diet_option,
+            image_source,
+            review_link
         )
         
         # Send message with image if available

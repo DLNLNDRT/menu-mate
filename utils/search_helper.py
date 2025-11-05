@@ -75,7 +75,7 @@ async def search_google_reviews(restaurant_name: str, location: Optional[str] = 
         return f"Unexpected error: {str(e)}"
 
 
-async def search_dish_image(restaurant_name: str, dish_name: str) -> Optional[str]:
+async def search_dish_image(restaurant_name: str, dish_name: str) -> tuple[Optional[str], Optional[str]]:
     """
     Search for real photos of a dish from Google Images (often from reviews).
     This finds actual user-uploaded photos from Google Reviews or restaurant sites.
@@ -85,12 +85,14 @@ async def search_dish_image(restaurant_name: str, dish_name: str) -> Optional[st
         dish_name: Name of the dish to search for
         
     Returns:
-        URL of the first relevant image found, or None if no image found
+        Tuple of (image_url, review_link) where:
+        - image_url: URL of the first relevant image found, or None if no image found
+        - review_link: URL to the source page (Google Review, etc.), or None if not available
     """
     api_key = os.getenv("SERPER_API_KEY")
     if not api_key:
         print("No SERPER_API_KEY configured for image search")
-        return None
+        return None, None
     
     # Build search query - search for restaurant + dish name
     # This often returns review photos
@@ -115,23 +117,27 @@ async def search_dish_image(restaurant_name: str, dish_name: str) -> Optional[st
         response.raise_for_status()
         data = response.json()
         
-        # Extract image URLs from results
+        # Extract image URLs and source links from results
         if "images" in data and len(data["images"]) > 0:
             # Get the first image that looks relevant
             for image in data["images"][:3]:  # Check top 3 images
                 image_url = image.get("imageUrl") or image.get("url")
+                review_link = image.get("link") or image.get("sourceUrl") or image.get("contextUrl")
+                
                 if image_url:
                     # Verify it's a valid image URL
                     if image_url.startswith(("http://", "https://")):
                         print(f"Found real dish image: {image_url[:80]}...")
-                        return image_url
+                        if review_link:
+                            print(f"Found review link: {review_link[:80]}...")
+                        return image_url, review_link
         
         print("No relevant images found in Google Images search")
-        return None
+        return None, None
         
     except requests.exceptions.RequestException as e:
         print(f"Error searching for dish image: {e}")
-        return None
+        return None, None
     except Exception as e:
         print(f"Unexpected error searching images: {e}")
-        return None
+        return None, None
