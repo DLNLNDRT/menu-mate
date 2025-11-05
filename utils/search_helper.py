@@ -111,16 +111,27 @@ async def get_review_link_for_dish(restaurant_name: str, dish_name: str) -> Opti
         response.raise_for_status()
         data = response.json()
         
-        # Get the first relevant result link
+        # Get the first relevant result link, prioritizing Google Reviews
+        google_links = []
+        other_links = []
+        
         if "organic" in data and len(data["organic"]) > 0:
-            for result in data["organic"][:3]:  # Check top 3 results
+            for result in data["organic"][:5]:  # Check top 5 results
                 link = result.get("link")
                 if link and link.startswith(("http://", "https://")):
-                    # Prefer Google Maps/Reviews links
-                    if "google.com" in link or "maps.google.com" in link:
-                        return link
-                    # Otherwise return first valid link
-                    return link
+                    # Prioritize Google Reviews/Maps links
+                    if ("google.com" in link or "maps.google.com" in link) and "review" in link.lower():
+                        google_links.append(link)
+                    elif "google.com" in link or "maps.google.com" in link:
+                        google_links.append(link)
+                    else:
+                        other_links.append(link)
+        
+        # Return Google link if available, otherwise return first other link
+        if google_links:
+            return google_links[0]
+        elif other_links:
+            return other_links[0]
         
         # If no organic results, try answerBox
         if "answerBox" in data:

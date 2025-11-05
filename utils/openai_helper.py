@@ -140,16 +140,23 @@ Available menu items: {menu_items_str}
 Google Reviews:
 {reviews_data}
 
+CRITICAL: ALL recommendations MUST be from the menu items listed above. DO NOT suggest dishes that are not in the "Available menu items" list.
+
 Based on these reviews and the menu items, provide THREE recommendations:
 
-1. BEST REVIEWED OPTION: The dish that received the most positive reviews (must be from menu items if available)
-   - Include: dish name, brief explanation (2-3 sentences), key positive review highlights
+1. BEST REVIEWED OPTION: The dish from the menu items that received the most positive reviews
+   - MUST be one of the menu items listed above
+   - Include: dish name (must match menu item exactly), brief explanation (2-3 sentences), key positive review highlights
+   - If no menu items match positive reviews, choose the best-reviewed menu item anyway
 
-2. WORST REVIEWED OPTION: The dish that received negative reviews or complaints (to help users avoid bad choices)
-   - Include: dish name, brief explanation (2-3 sentences), what reviewers complained about
+2. WORST REVIEWED OPTION: The dish from the menu items that received negative reviews or complaints (to help users avoid bad choices)
+   - MUST be one of the menu items listed above
+   - Include: dish name (must match menu item exactly), brief explanation (2-3 sentences), what reviewers complained about
+   - If no menu items have negative reviews, choose the least-reviewed menu item
 
-3. BEST DIET OPTION: The healthiest option suitable for someone on a diet, with ingredient details
-   - Include: dish name, brief explanation (2-3 sentences), list of main ingredients and why it's diet-friendly
+3. BEST DIET OPTION: The healthiest option from the menu items suitable for someone on a diet, with ingredient details
+   - MUST be one of the menu items listed above
+   - Include: dish name (must match menu item exactly), brief explanation (2-3 sentences), list of main ingredients and why it's diet-friendly
 
 Return your response in this JSON format:
 {{
