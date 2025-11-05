@@ -108,11 +108,15 @@ def format_recommendation_message(
     worst_reviewed: Dict,
     diet_option: Dict,
     image_source: Optional[str] = None,
-    review_link: Optional[str] = None
+    review_link: Optional[str] = None,
+    best_review_link: Optional[str] = None,
+    worst_review_link: Optional[str] = None,
+    diet_review_link: Optional[str] = None
 ) -> str:
     """
     Format a recommendation message for WhatsApp with three options.
     Ensures message stays under 1500 characters for Twilio limits.
+    Dish names are hyperlinked if review links are available.
     
     Args:
         restaurant_name: Name of the restaurant
@@ -121,6 +125,9 @@ def format_recommendation_message(
         diet_option: Dict with dish, explanation, and ingredients
         image_source: Source of the dish image ("google" or "generated" or None)
         review_link: URL to the review page if image is from Google
+        best_review_link: URL to reviews for best reviewed dish
+        worst_review_link: URL to reviews for worst reviewed dish
+        diet_review_link: URL to reviews for diet option
         
     Returns:
         Formatted message string (max 1500 characters)
@@ -134,14 +141,34 @@ def format_recommendation_message(
             return text
         return truncate_text(text, max_chars)
     
-    best_explanation = truncate_field(best_reviewed.get('explanation', ''), 200)
-    best_highlights = truncate_field(best_reviewed.get('highlights', 'No highlights available'), 150)
+    best_explanation = truncate_field(best_reviewed.get('explanation', ''), 180)
+    best_highlights = truncate_field(best_reviewed.get('highlights', 'No highlights available'), 130)
     
-    worst_explanation = truncate_field(worst_reviewed.get('explanation', ''), 200)
-    worst_complaints = truncate_field(worst_reviewed.get('complaints', 'No complaints available'), 150)
+    worst_explanation = truncate_field(worst_reviewed.get('explanation', ''), 180)
+    worst_complaints = truncate_field(worst_reviewed.get('complaints', 'No complaints available'), 130)
     
-    diet_explanation = truncate_field(diet_option.get('explanation', ''), 200)
-    diet_ingredients = truncate_field(diet_option.get('ingredients', 'Not available'), 150)
+    diet_explanation = truncate_field(diet_option.get('explanation', ''), 180)
+    diet_ingredients = truncate_field(diet_option.get('ingredients', 'Not available'), 130)
+    
+    # Format dish names with hyperlinks if review links are available
+    # WhatsApp supports markdown-style links: [text](url)
+    best_dish_name = best_reviewed.get('dish', 'N/A')
+    if best_review_link:
+        best_dish_formatted = f"[{best_dish_name}]({best_review_link})"
+    else:
+        best_dish_formatted = f"*{best_dish_name}*"
+    
+    worst_dish_name = worst_reviewed.get('dish', 'N/A')
+    if worst_review_link:
+        worst_dish_formatted = f"[{worst_dish_name}]({worst_review_link})"
+    else:
+        worst_dish_formatted = f"*{worst_dish_name}*"
+    
+    diet_dish_name = diet_option.get('dish', 'N/A')
+    if diet_review_link:
+        diet_dish_formatted = f"[{diet_dish_name}]({diet_review_link})"
+    else:
+        diet_dish_formatted = f"*{diet_dish_name}*"
     
     # Build message
     message = f"""🍽 *Restaurant:* {restaurant_name or 'Unknown'}
@@ -149,7 +176,7 @@ def format_recommendation_message(
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ✅ *BEST REVIEWED:*
-*{best_reviewed.get('dish', 'N/A')}*
+{best_dish_formatted}
 
 {best_explanation}
 
@@ -159,7 +186,7 @@ def format_recommendation_message(
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ❌ *WORST REVIEWED (Avoid):*
-*{worst_reviewed.get('dish', 'N/A')}*
+{worst_dish_formatted}
 
 {worst_explanation}
 
@@ -169,7 +196,7 @@ def format_recommendation_message(
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 🥗 *BEST DIET OPTION:*
-*{diet_option.get('dish', 'N/A')}*
+{diet_dish_formatted}
 
 {diet_explanation}
 

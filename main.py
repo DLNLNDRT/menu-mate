@@ -14,7 +14,7 @@ from utils.openai_helper import (
     summarize_reviews_and_recommend,
     generate_dish_image
 )
-from utils.search_helper import search_google_reviews, search_dish_image
+from utils.search_helper import search_google_reviews, search_dish_image, get_review_link_for_dish
 from utils.whatsapp_helper import (
     send_whatsapp_message,
     format_recommendation_message,
@@ -124,6 +124,28 @@ async def process_menu_request(
             "ingredients": "No ingredient data available."
         })
         
+        # Step 4.5: Get review links for each dish
+        best_dish_name = best_reviewed.get("dish", "")
+        worst_dish_name = worst_reviewed.get("dish", "")
+        diet_dish_name = diet_option.get("dish", "")
+        
+        best_review_link = None
+        worst_review_link = None
+        diet_review_link = None
+        
+        if restaurant_name:
+            if best_dish_name and best_dish_name.lower() not in ["ask the waiter for recommendations", "not available", "n/a"]:
+                print(f"Getting review link for best reviewed dish: {best_dish_name}")
+                best_review_link = await get_review_link_for_dish(restaurant_name, best_dish_name)
+            
+            if worst_dish_name and worst_dish_name.lower() not in ["not available", "n/a"]:
+                print(f"Getting review link for worst reviewed dish: {worst_dish_name}")
+                worst_review_link = await get_review_link_for_dish(restaurant_name, worst_dish_name)
+            
+            if diet_dish_name and diet_dish_name.lower() not in ["not available", "n/a"]:
+                print(f"Getting review link for diet option: {diet_dish_name}")
+                diet_review_link = await get_review_link_for_dish(restaurant_name, diet_dish_name)
+        
         # Step 5: Find or generate dish image for best reviewed option
         dish_image_url = None
         image_source = None  # Track where the image came from
@@ -176,7 +198,10 @@ async def process_menu_request(
             worst_reviewed,
             diet_option,
             image_source,
-            review_link
+            review_link,
+            best_review_link,
+            worst_review_link,
+            diet_review_link
         )
         
         # Send message with image if available

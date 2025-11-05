@@ -75,6 +75,66 @@ async def search_google_reviews(restaurant_name: str, location: Optional[str] = 
         return f"Unexpected error: {str(e)}"
 
 
+async def get_review_link_for_dish(restaurant_name: str, dish_name: str) -> Optional[str]:
+    """
+    Get a review link for a specific dish by searching Google.
+    
+    Args:
+        restaurant_name: Name of the restaurant
+        dish_name: Name of the dish
+        
+    Returns:
+        URL to a review page mentioning the dish, or None if not found
+    """
+    api_key = os.getenv("SERPER_API_KEY")
+    if not api_key:
+        return None
+    
+    # Build search query for dish reviews
+    query = f"{restaurant_name} {dish_name} review"
+    
+    try:
+        url = "https://google.serper.dev/search"
+        headers = {
+            "X-API-KEY": api_key,
+            "Content-Type": "application/json"
+        }
+        
+        payload = {
+            "q": query,
+            "num": 5  # Get top 5 results
+        }
+        
+        response = await asyncio.to_thread(
+            requests.post, url, headers=headers, json=payload, timeout=10
+        )
+        response.raise_for_status()
+        data = response.json()
+        
+        # Get the first relevant result link
+        if "organic" in data and len(data["organic"]) > 0:
+            for result in data["organic"][:3]:  # Check top 3 results
+                link = result.get("link")
+                if link and link.startswith(("http://", "https://")):
+                    # Prefer Google Maps/Reviews links
+                    if "google.com" in link or "maps.google.com" in link:
+                        return link
+                    # Otherwise return first valid link
+                    return link
+        
+        # If no organic results, try answerBox
+        if "answerBox" in data:
+            link = data["answerBox"].get("link")
+            if link:
+                return link
+        
+        return None
+        
+    except Exception as e:
+        print(f"Error getting review link for {dish_name}: {e}")
+        return None
+
+
 async def search_dish_image(restaurant_name: str, dish_name: str) -> tuple[Optional[str], Optional[str]]:
     """
     Search for real photos of a dish from Google Images (often from reviews).
