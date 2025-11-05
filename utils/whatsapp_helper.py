@@ -127,97 +127,70 @@ def format_recommendation_message(
     """
     MAX_LENGTH = 1500
     
-    # Base message structure
-    base = f"""🍽 *Restaurant:* {restaurant_name or 'Unknown'}
+    # Truncate individual text fields to reasonable lengths
+    # Allocate space: ~500 chars for each main section, ~200 for header/footer
+    def truncate_field(text: str, max_chars: int) -> str:
+        if len(text) <= max_chars:
+            return text
+        return truncate_text(text, max_chars)
+    
+    best_explanation = truncate_field(best_reviewed.get('explanation', ''), 200)
+    best_highlights = truncate_field(best_reviewed.get('highlights', 'No highlights available'), 150)
+    
+    worst_explanation = truncate_field(worst_reviewed.get('explanation', ''), 200)
+    worst_complaints = truncate_field(worst_reviewed.get('complaints', 'No complaints available'), 150)
+    
+    diet_explanation = truncate_field(diet_option.get('explanation', ''), 200)
+    diet_ingredients = truncate_field(diet_option.get('ingredients', 'Not available'), 150)
+    
+    # Build message
+    message = f"""🍽 *Restaurant:* {restaurant_name or 'Unknown'}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ✅ *BEST REVIEWED:*
 *{best_reviewed.get('dish', 'N/A')}*
 
-{best_reviewed.get('explanation', '')}
+{best_explanation}
 
 ⭐ *Review Highlights:*
-{best_reviewed.get('highlights', 'No highlights available')}
+{best_highlights}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ❌ *WORST REVIEWED (Avoid):*
 *{worst_reviewed.get('dish', 'N/A')}*
 
-{worst_reviewed.get('explanation', '')}
+{worst_explanation}
 
 ⚠️ *Complaints:*
-{worst_reviewed.get('complaints', 'No complaints available')}
+{worst_complaints}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 🥗 *BEST DIET OPTION:*
 *{diet_option.get('dish', 'N/A')}*
 
-{diet_option.get('explanation', '')}
+{diet_explanation}
 
 🥬 *Ingredients & Benefits:*
-{diet_option.get('ingredients', 'Not available')}"""
+{diet_ingredients}"""
     
     # Add image source information if available
-    image_info = ""
     if image_source == "google":
-        image_info = "\n\n📷 *Photo:* Real customer photo from Google Reviews"
+        message += "\n\n📷 *Photo:* Real customer photo from Google Reviews"
         if review_link:
-            image_info += f"\n🔗 *View Review:* {review_link}"
+            message += f"\n🔗 *View Review:* {review_link}"
     elif image_source == "generated":
-        image_info = "\n\n🎨 *Photo:* AI-generated image"
+        message += "\n\n🎨 *Photo:* AI-generated image"
     
-    footer = "\n\nBon appétit! 🍴"
+    message += "\n\nBon appétit! 🍴"
     
-    # Calculate available space for content
-    fixed_length = len(base.split('\n\n')[0]) + len(image_info) + len(footer)
-    available_length = MAX_LENGTH - fixed_length
-    
-    # If base message is too long, truncate sections
-    if len(base) > available_length:
-        # Calculate proportional space for each section
-        sections = base.split('\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n')
-        
-        # Truncate each section proportionally
-        best_section = sections[0] if len(sections) > 0 else ""
-        worst_section = sections[1] if len(sections) > 1 else ""
-        diet_section = sections[2] if len(sections) > 2 else ""
-        
-        # Allocate space: 40% best, 30% worst, 30% diet
-        best_max = int(available_length * 0.4)
-        worst_max = int(available_length * 0.3)
-        diet_max = int(available_length * 0.3)
-        
-        # Truncate each section
-        if len(best_section) > best_max:
-            best_section = truncate_text(best_section, best_max)
-        if len(worst_section) > worst_max:
-            worst_section = truncate_text(worst_section, worst_max)
-        if len(diet_section) > diet_max:
-            diet_section = truncate_text(diet_section, diet_max)
-        
-        # Reconstruct message
-        message = best_section
-        if worst_section:
-            message += "\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n" + worst_section
-        if diet_section:
-            message += "\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n" + diet_section
-    else:
-        message = base
-    
-    # Add image info and footer
-    message += image_info + footer
-    
-    # Final check: if still too long, truncate more aggressively
+    # Final safety check: if still too long, truncate the entire message
     if len(message) > MAX_LENGTH:
-        # Truncate the entire message
-        message = truncate_text(message, MAX_LENGTH - len(footer)) + footer
-    
-    # Ensure we're under limit
-    if len(message) > MAX_LENGTH:
-        message = message[:MAX_LENGTH - 3] + "..."
+        # Truncate from the end, keeping the beginning intact
+        excess = len(message) - MAX_LENGTH + 20  # Add buffer
+        message = message[:-excess] + "...\n\nBon appétit! 🍴"
     
     return message
 
