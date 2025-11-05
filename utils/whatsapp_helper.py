@@ -150,23 +150,23 @@ def format_recommendation_message(
     diet_explanation = truncate_field(diet_option.get('explanation', ''), 180)
     diet_ingredients = truncate_field(diet_option.get('ingredients', 'Not available'), 130)
     
-    # Format dish names with hyperlinks if review links are available
-    # WhatsApp supports markdown-style links: [text](url)
+    # Format dish names - WhatsApp doesn't support markdown links, so we format as:
+    # *Dish Name* - https://url.com (WhatsApp will auto-detect and make URL clickable)
     best_dish_name = best_reviewed.get('dish', 'N/A')
     if best_review_link:
-        best_dish_formatted = f"[{best_dish_name}]({best_review_link})"
+        best_dish_formatted = f"*{best_dish_name}*\n🔗 {best_review_link}"
     else:
         best_dish_formatted = f"*{best_dish_name}*"
     
     worst_dish_name = worst_reviewed.get('dish', 'N/A')
     if worst_review_link:
-        worst_dish_formatted = f"[{worst_dish_name}]({worst_review_link})"
+        worst_dish_formatted = f"*{worst_dish_name}*\n🔗 {worst_review_link}"
     else:
         worst_dish_formatted = f"*{worst_dish_name}*"
     
     diet_dish_name = diet_option.get('dish', 'N/A')
     if diet_review_link:
-        diet_dish_formatted = f"[{diet_dish_name}]({diet_review_link})"
+        diet_dish_formatted = f"*{diet_dish_name}*\n🔗 {diet_review_link}"
     else:
         diet_dish_formatted = f"*{diet_dish_name}*"
     
