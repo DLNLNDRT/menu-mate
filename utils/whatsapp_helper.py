@@ -79,6 +79,29 @@ async def send_whatsapp_message(
         return False
 
 
+def truncate_text(text: str, max_length: int) -> str:
+    """
+    Truncate text to a maximum length, ensuring it ends at a word boundary.
+    
+    Args:
+        text: Text to truncate
+        max_length: Maximum length
+        
+    Returns:
+        Truncated text with "..." if needed
+    """
+    if len(text) <= max_length:
+        return text
+    
+    # Truncate and find last space before max_length
+    truncated = text[:max_length - 3]
+    last_space = truncated.rfind(' ')
+    if last_space > max_length * 0.8:  # Only use word boundary if it's not too short
+        truncated = truncated[:last_space]
+    
+    return truncated + "..."
+
+
 def format_recommendation_message(
     restaurant_name: str,
     best_reviewed: Dict,
@@ -89,6 +112,7 @@ def format_recommendation_message(
 ) -> str:
     """
     Format a recommendation message for WhatsApp with three options.
+    Ensures message stays under 1500 characters for Twilio limits.
     
     Args:
         restaurant_name: Name of the restaurant
@@ -99,10 +123,12 @@ def format_recommendation_message(
         review_link: URL to the review page if image is from Google
         
     Returns:
-        Formatted message string
+        Formatted message string (max 1500 characters)
     """
-    # Use emojis to make it visually appealing
-    message = f"""🍽 *Restaurant:* {restaurant_name or 'Unknown'}
+    MAX_LENGTH = 1500
+    
+    # Base message structure
+    base = f"""🍽 *Restaurant:* {restaurant_name or 'Unknown'}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -135,14 +161,63 @@ def format_recommendation_message(
 {diet_option.get('ingredients', 'Not available')}"""
     
     # Add image source information if available
+    image_info = ""
     if image_source == "google":
-        message += "\n\n📷 *Photo:* Real customer photo from Google Reviews"
+        image_info = "\n\n📷 *Photo:* Real customer photo from Google Reviews"
         if review_link:
-            message += f"\n🔗 *View Review:* {review_link}"
+            image_info += f"\n🔗 *View Review:* {review_link}"
     elif image_source == "generated":
-        message += "\n\n🎨 *Photo:* AI-generated image"
+        image_info = "\n\n🎨 *Photo:* AI-generated image"
     
-    message += "\n\nBon appétit! 🍴"
+    footer = "\n\nBon appétit! 🍴"
+    
+    # Calculate available space for content
+    fixed_length = len(base.split('\n\n')[0]) + len(image_info) + len(footer)
+    available_length = MAX_LENGTH - fixed_length
+    
+    # If base message is too long, truncate sections
+    if len(base) > available_length:
+        # Calculate proportional space for each section
+        sections = base.split('\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n')
+        
+        # Truncate each section proportionally
+        best_section = sections[0] if len(sections) > 0 else ""
+        worst_section = sections[1] if len(sections) > 1 else ""
+        diet_section = sections[2] if len(sections) > 2 else ""
+        
+        # Allocate space: 40% best, 30% worst, 30% diet
+        best_max = int(available_length * 0.4)
+        worst_max = int(available_length * 0.3)
+        diet_max = int(available_length * 0.3)
+        
+        # Truncate each section
+        if len(best_section) > best_max:
+            best_section = truncate_text(best_section, best_max)
+        if len(worst_section) > worst_max:
+            worst_section = truncate_text(worst_section, worst_max)
+        if len(diet_section) > diet_max:
+            diet_section = truncate_text(diet_section, diet_max)
+        
+        # Reconstruct message
+        message = best_section
+        if worst_section:
+            message += "\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n" + worst_section
+        if diet_section:
+            message += "\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n" + diet_section
+    else:
+        message = base
+    
+    # Add image info and footer
+    message += image_info + footer
+    
+    # Final check: if still too long, truncate more aggressively
+    if len(message) > MAX_LENGTH:
+        # Truncate the entire message
+        message = truncate_text(message, MAX_LENGTH - len(footer)) + footer
+    
+    # Ensure we're under limit
+    if len(message) > MAX_LENGTH:
+        message = message[:MAX_LENGTH - 3] + "..."
     
     return message
 
