@@ -142,17 +142,17 @@ Google Reviews:
 
 CRITICAL: ALL recommendations MUST be from the menu items listed above. DO NOT suggest dishes that are not in the "Available menu items" list.
 
-Based on these reviews and the menu items, provide THREE recommendations:
+{"NOTE: No reviews are available. Analyze the menu items directly and make recommendations based on dish names, descriptions, and typical characteristics of these types of dishes." if "No reviews available" in reviews_data else "Based on these reviews and the menu items, provide THREE recommendations:"}
 
-1. BEST REVIEWED OPTION: The dish from the menu items that received the most positive reviews
+1. BEST REVIEWED OPTION: {"The dish from the menu items that received the most positive reviews" if "No reviews available" not in reviews_data else "The dish from the menu items that sounds most appealing based on its name and typical characteristics"}
    - MUST be one of the menu items listed above
-   - Include: dish name (must match menu item exactly), brief explanation (2-3 sentences), key positive review highlights
-   - If no menu items match positive reviews, choose the best-reviewed menu item anyway
+   - Include: dish name (must match menu item exactly), brief explanation (2-3 sentences), {"key positive review highlights" if "No reviews available" not in reviews_data else "why this dish sounds appealing"}
+   - If no menu items match positive reviews, choose the most appealing menu item based on name/description
 
-2. WORST REVIEWED OPTION: The dish from the menu items that received negative reviews or complaints (to help users avoid bad choices)
+2. WORST REVIEWED OPTION: {"The dish from the menu items that received negative reviews or complaints (to help users avoid bad choices)" if "No reviews available" not in reviews_data else "The dish from the menu items that might be less appealing or more risky based on its name and typical characteristics"}
    - MUST be one of the menu items listed above
-   - Include: dish name (must match menu item exactly), brief explanation (2-3 sentences), what reviewers complained about
-   - If no menu items have negative reviews, choose the least-reviewed menu item
+   - Include: dish name (must match menu item exactly), brief explanation (2-3 sentences), {"what reviewers complained about" if "No reviews available" not in reviews_data else "why this dish might be less appealing or more risky"}
+   - If no menu items have negative reviews, choose the least appealing or most generic menu item
 
 3. BEST DIET OPTION: The healthiest option from the menu items suitable for someone on a diet, with ingredient details
    - MUST be one of the menu items listed above
@@ -163,12 +163,12 @@ Return your response in this JSON format:
     "best_reviewed": {{
         "dish": "dish name",
         "explanation": "brief explanation",
-        "highlights": "key positive mentions"
+        "highlights": "key positive mentions or why it sounds appealing"
     }},
     "worst_reviewed": {{
         "dish": "dish name",
         "explanation": "brief explanation",
-        "complaints": "what reviewers complained about"
+        "complaints": "what reviewers complained about or why it might be less appealing"
     }},
     "diet_option": {{
         "dish": "dish name",
