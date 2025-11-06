@@ -328,7 +328,7 @@ async def webhook(request: Request):
         print("=" * 60)
         
         # Still respond quickly to Twilio, even on error
-        return Response(content="OK", status_code=200)
+        return Response(content="Thank you for using MenuMate! We will start working on your request, you are almost ready to order!", status_code=200)
 
 
 if __name__ == "__main__":
