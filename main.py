@@ -211,7 +211,7 @@ async def process_menu_request(
         
         # Step 6: Format and send response
         message = format_recommendation_message(
-            restaurant_name or "We could identify your restaurant name from the menu image, but you can make a new request with the restaurant name in the text message and menu image",
+            restaurant_name or "We could not identify your restaurant name from the menu image, but you can make a new request with the restaurant name in the text message and menu image",
             best_reviewed,
             worst_reviewed,
             diet_option,
