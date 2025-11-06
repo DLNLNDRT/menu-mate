@@ -101,7 +101,7 @@ async def process_menu_request(
         
         # Step 2.5: Check if user provided restaurant name in the text message
         if not restaurant_name:
-            if user_question and user_question.lower() not in ["what should i order?", "what should i order", ""]:
+            if user_question and user_question.lower() not in ["what should i order?", "what should i order", "what to eat here",""]:
                 # Try to extract restaurant name from user question
                 # If it's a simple name (not a question), use it
                 potential_name = user_question.strip()
@@ -211,7 +211,7 @@ async def process_menu_request(
         
         # Step 6: Format and send response
         message = format_recommendation_message(
-            restaurant_name or "Restaurant",
+            restaurant_name or "We could identify your restaurant name from the menu image, but you can make a new request with the restaurant name in the text message and menu image",
             best_reviewed,
             worst_reviewed,
             diet_option,
