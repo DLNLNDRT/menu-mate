@@ -515,7 +515,7 @@ async def webhook(request: Request):
                     from_number,
                     "📸 Please send a photo of the menu or restaurant along with your question!"
                 ))
-            return Response(content="OK", status_code=200)
+            return Response(content="Thank you for using MenuMate! We will start working on your request, you are almost ready to order!", status_code=200)
         
         # Get user question or use default
         user_question = body if body else "What should I order?"
@@ -530,7 +530,7 @@ async def webhook(request: Request):
         ))
         
         # Return immediately - Twilio is happy!
-        return Response(content="OK", status_code=200)
+        return Response(content="Thank you for using MenuMate! We will start working on your request, you are almost ready to order!", status_code=200)
         
     except Exception as e:
         import traceback
@@ -547,7 +547,7 @@ async def webhook(request: Request):
         print("=" * 60)
         
         # Still respond quickly to Twilio, even on error
-        return Response(content="OK", status_code=200)
+        return Response(content="Thank you for using MenuMate! We will start working on your request, you are almost ready to order!", status_code=200)
 
 
 if __name__ == "__main__":
