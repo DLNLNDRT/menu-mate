@@ -92,6 +92,32 @@ async def process_menu_request(
         menu_items = menu_analysis.get("menu_items", [])
         cuisine_type = menu_analysis.get("cuisine_type", "unknown")
         
+        # Step 2.5: If restaurant name not found, ask user for it
+        if not restaurant_name:
+            # Check if user provided restaurant name in the text message
+            if user_question and user_question.lower() not in ["what should i order?", "what should i order", ""]:
+                # Try to extract restaurant name from user question
+                # If it's a simple name (not a question), use it
+                potential_name = user_question.strip()
+                # If it doesn't look like a question, treat as restaurant name
+                if not potential_name.endswith("?") and len(potential_name.split()) <= 5:
+                    restaurant_name = potential_name
+                    print(f"Using restaurant name from user message: {restaurant_name}")
+                else:
+                    # Ask user for restaurant name
+                    await send_whatsapp_message(
+                        from_number,
+                        "🏷️ I couldn't find the restaurant name on the menu. Please send me the restaurant name so I can find reviews for you!"
+                    )
+                    return
+            else:
+                # Ask user for restaurant name
+                await send_whatsapp_message(
+                    from_number,
+                    "🏷️ I couldn't find the restaurant name on the menu. Please send me the restaurant name so I can find reviews for you!"
+                )
+                return
+        
         # Step 3: Search for Google Reviews
         reviews_data = "No reviews available."
         if restaurant_name:
@@ -290,13 +316,21 @@ async def webhook(request: Request):
         
         # Validate we have an image
         if not image_url:
-            # Respond immediately to Twilio
-            # Then send message in background using create_task
-            asyncio.create_task(send_whatsapp_message(
-                from_number,
-                "📸 Please send a photo of the menu or restaurant along with your question!"
-            ))
-            return Response(content="OK", status_code=200)
+            # Check if user sent text-only message (might be restaurant name from previous request)
+            if body and body.strip():
+                # User might be providing restaurant name after we asked for it
+                # But we need the menu image first, so ask for both
+                asyncio.create_task(send_whatsapp_message(
+                    from_number,
+                    "📸 Please send a photo of the menu or restaurant along with your question!\n\n💡 Tip: You can include the restaurant name in your message along with the menu photo."
+                ))
+            else:
+                # No image and no text - ask for menu photo
+                asyncio.create_task(send_whatsapp_message(
+                    from_number,
+                    "📸 Please send a photo of the menu or restaurant along with your question!"
+                ))
+            return Response(content="Thank you for using MenuMate! We will start working on your request, you are almost ready to order!", status_code=200)
         
         # Get user question or use default
         user_question = body if body else "What should I order?"
@@ -311,7 +345,7 @@ async def webhook(request: Request):
         ))
         
         # Return immediately - Twilio is happy!
-        return Response(content="OK", status_code=200)
+        return Response(content="Thank you for using MenuMate! We will start working on your request, you are almost ready to order!", status_code=200)
         
     except Exception as e:
         import traceback
